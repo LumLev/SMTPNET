@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-SmtpWorker-19a9de63-370f-46d7-b955-e5a550b25e82</UserSecretsId>
+  </PropertyGroup>
+
+	
+  <ItemGroup>
+	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+	  <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SMTPNET.Listener\SMTPNET.Listener.csproj" />
+    <ProjectReference Include="..\SMTPNET.Sender\SMTPNET.Sender.csproj" />
+  </ItemGroup>
+</Project>

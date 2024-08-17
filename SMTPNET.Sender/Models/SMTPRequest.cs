@@ -3,8 +3,6 @@ using SMTPNET.Extensions;
 using SMTPNET.MailDns;
 using SMTPNET.Sender.Extensions;
 using SMTPNET.Sender.Models.Base;
-using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
 using System.Net.Mail;
 using System.Net.Sockets;
 
@@ -36,10 +34,11 @@ namespace SMTPNET.Sender.Models
         {
             List<EmailSent> emailsSent = new();
             var hosts = Message.To.Select(x => x.Host).Order();
-            ArraySegment<byte> mailData;
+            byte[] mailData;
             if (dkimSigned)
             {
-                mailData = Message.GetMessageDataDkimSigned();
+             mailData = Message.GetMessageDataDkimSigned();
+             //mailData = Message.RawDkimSignedMessage();
             }
             else
             {
@@ -86,7 +85,7 @@ namespace SMTPNET.Sender.Models
             else
             {
                 EndSuccess = false;
-                return new EmailSent[0];
+                return [];
             }
         }
 

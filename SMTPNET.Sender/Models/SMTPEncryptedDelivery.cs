@@ -1,11 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
+﻿﻿using Microsoft.Extensions.Logging;
 using SMTPNET.Extensions;
 using SMTPNET.Sender.Models.Base;
-using System.IO;
 using System.Net.Mail;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -30,7 +28,6 @@ namespace SMTPNET.Sender.Models
             }
         }
 
-
         public static SslClientAuthenticationOptions ClientTlsOpts(string host)
         {
             return new SslClientAuthenticationOptions()
@@ -44,7 +41,6 @@ namespace SMTPNET.Sender.Models
             };
         }
 
-
         public bool EndSuccess { get; set; }
 
         public EmailSent[] CheckDelivery { get; init; }
@@ -53,7 +49,7 @@ namespace SMTPNET.Sender.Models
         {
             if (evaluateStart(_networkStream, "220"))
             {
-                Write(_networkStream, $"EHLO mail.{messageFrom.Host} \r\n");
+                Write(_networkStream, $"EHLO {messageFrom.Host}\r\n");
 
                 bool hasTLS = ReadEhloForStarTLS(_networkStream);
                 
@@ -79,13 +75,13 @@ namespace SMTPNET.Sender.Models
                         catch (Exception e) { _logger.LogError(e.Message); _logger.LogError(e.Message); }
                     }
                 }
-                Write(_networkStream, $"MAIL FROM: <{messageFrom}> \r\n");
+                Write(_networkStream, $"MAIL FROM:<{messageFrom}>\r\n");
                     if (evaluateStart(_networkStream, "250"))
                     {
                         bool shouldSend = false;
                         for (int i = 0; i < CheckDelivery.Length; i++)
                         {
-                        Write(_networkStream, $"RCPT TO: <{CheckDelivery[i].Email.Address.ToUpperInvariant()}> \r\n");
+                            Write(_networkStream, $"RCPT TO:<{CheckDelivery[i].Email.Address.ToUpperInvariant()}> \r\n");
                             CheckDelivery[i].Received = evaluateStart(_networkStream, "250");
                             if (shouldSend is false)
                             {
@@ -98,7 +94,7 @@ namespace SMTPNET.Sender.Models
                         if (shouldSend)
                         {
                                 Write(_networkStream, "DATA \r\n");
-                           
+                                bool shouldSendData = evaluateStart(_networkStream, "354");
                                 _networkStream.Write(mailData);
                                 EndSuccess = evaluateStart(_networkStream, "250");
                                 Write(_networkStream, "QUIT \r\n");
@@ -119,18 +115,17 @@ namespace SMTPNET.Sender.Models
 
         private bool EncryptedConversation(SslStream stream, MailAddress addressFrom, ReadOnlySpan<byte> mailData)
         {
-            Write(stream,$"EHLO {addressFrom.Host} \r\n");
-            if (evaluateStart(stream, "250"))
-            {
-                stream.Flush();
-                _logger.LogInformation("Sending Mail");
-                Write(stream,$"MAIL FROM: <{addressFrom.Address.ToUpperInvariant()}> \r\n");
-                ReadEhloForStarTLS(stream);
-                    stream.Flush();
+            Write(stream,$"EHLO {addressFrom.Host}\r\n");
+            ReadEhloForStarTLS(stream);
+            stream.Flush();
+            _logger.LogInformation("Sending Encrypted Mail");
+            Write(stream,$"MAIL FROM:<{addressFrom.Address}>\r\n");
+                if (evaluateStart(stream, "250"))
+                {
                     bool shouldSend = false;
                     for (int i = 0; i < CheckDelivery.Length; i++)
                     {
-                        Write(stream,$"RCPT TO: <{CheckDelivery[i].Email.Address.ToUpperInvariant()}> \r\n");
+                        Write(stream,$"RCPT TO:<{CheckDelivery[i].Email.Address.ToUpperInvariant()}>\r\n");
                         CheckDelivery[i].Received = evaluateStart(stream, "250"); // These have to be falsed if the data command below fails.
                         if (shouldSend is false)
                         {
@@ -148,7 +143,7 @@ namespace SMTPNET.Sender.Models
                             switch (code)
                             {
                                 case "250":
-                            goto redoData;
+                                    goto redoData;
                                 case "354":
                                     _logger.LogInformation($"Sent: {Encoding.ASCII.GetString(mailData)}");
                                     stream.Write(mailData);
@@ -159,7 +154,7 @@ namespace SMTPNET.Sender.Models
                                     stream.Dispose();
                                     return true;
                             default:
-                            _logger.LogCritical($"Code Received: {code}");
+                                _logger.LogCritical($"CriticalCode Received: {code}");
                             break;
                             }
                     }
@@ -172,19 +167,20 @@ namespace SMTPNET.Sender.Models
                         stream.Dispose();
                         return false;
                     }
-                
-            }
-            else
-            {
-                _logger.LogCritical("EncDelivery Failed on EHLO");
-            }
             _logger.LogCritical("Ended without success");
             this.EndSuccess = false;
             Write(stream, "QUIT \r\n");
             stream.Close();
             stream.Dispose();
             return false;
+            }
+            else {
+                _logger.LogCritical("MAIL command failed");
+                return false;
+            }
         }
+       
+        
 
 
         //internal ReadOnlySpan<char> First3(Stream stream)
@@ -206,10 +202,11 @@ namespace SMTPNET.Sender.Models
         {
             Span<byte> bytes = stackalloc byte[64];
             int count = stream.Read(bytes);
-            if (count > 3)
+            if (count > 2)
             {
                 string received = Encoding.ASCII.GetString(bytes);
                 _logger.LogInformation($"First 3 Read: {received}");
+                stream.Flush();
                 return received.AsSpan(..3);
             }
             else { stream.Flush(); return []; }
@@ -224,16 +221,20 @@ namespace SMTPNET.Sender.Models
                 Span<char> chars = stackalloc char[start.Length];
                 Encoding.ASCII.GetChars(bytes[..start.Length], chars);
                 _logger.LogInformation($"Eval Read: {chars}");
-                stream.Flush();
+                
                 return chars.SequenceEqual(start);
             }
-            else { stream.Flush(); return false; }
+            else 
+            {
+                _logger.LogInformation("evaluateStart read 0 chars");
+                return false; 
+            }
         }
 
 
         private bool ReadEhloForStarTLS(Stream stream)
         {
-            Span<byte> bytes = stackalloc byte[128]; //this can be stacalloc
+            Span<byte> bytes = stackalloc byte[256]; //this can be stacalloc
             bool hasStarTLS = false;  
             int count;
         reread:
@@ -259,8 +260,6 @@ namespace SMTPNET.Sender.Models
                             case ' ':
                                 return hasStarTLS;
                             case '-':
-                                // this is the case idk
-                                break;
                             default:
                                 break;
                         }

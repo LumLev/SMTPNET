@@ -4,9 +4,6 @@ using System.Text;
 
 namespace SMTPNET.MailDns
 {
-
-
-
     public record MXRecord
     {
         public MXRecord() { }
@@ -111,7 +108,6 @@ namespace SMTPNET.MailDns
                 {
                     data[position++] = b[k];
                 }
-
             }
 
             data[position++] = (byte)0; data[position++] = (byte)0;
@@ -120,11 +116,8 @@ namespace SMTPNET.MailDns
 
         }
 
-
-
         public MXRecord? GetFirstMX(string host)
         {
-
             UdpClient dnsClient = new UdpClient(dnsServer, DNS_PORT);
             dnsClient.Client.ReceiveTimeout = 5_000; // in milliseconds
 
@@ -133,7 +126,6 @@ namespace SMTPNET.MailDns
             try
             {
                 dnsClient.Send(data);
-
                 IPEndPoint? endpoint = null;
                 data = dnsClient.Receive(ref endpoint);
 

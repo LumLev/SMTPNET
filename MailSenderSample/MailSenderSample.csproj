@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+     <PackageReference Include="MimeKit" Version="4.7.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -16,7 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="dkims.json">
+    <None Update="dkim_private.key">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="dkim_private.key">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

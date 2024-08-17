@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/MailSenderSample/dkim_public.key
+/MailSenderSample/dkim_private.key
+/MailSenderSample/dkims.json
+*.txt

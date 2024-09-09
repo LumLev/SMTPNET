@@ -1,7 +1,7 @@
 ﻿using System.Net.Mail;
 using SMTPNET.Sender.Models;
 using System.Text;
-
+using Microsoft.Extensions.Logging;
 
 
 

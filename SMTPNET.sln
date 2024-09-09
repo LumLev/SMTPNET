@@ -11,8 +11,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SMTPNET.Extensions", "SMTPN
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SMTPNET.WorkerReceiver", "SMTPNET.WorkerReceiver\SMTPNET.WorkerReceiver.csproj", "{41F62953-69A4-4DA0-8396-3B1C22327E35}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmtpWorker", "SmtpWorker\SmtpWorker.csproj", "{42747491-F317-42A5-8731-1A0A8BC0F01D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailSenderSample", "MailSenderSample\MailSenderSample.csproj", "{12841EB8-6564-4701-BA87-A0FC033753C2}"
 EndProject
 Global

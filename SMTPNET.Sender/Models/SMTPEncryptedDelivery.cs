@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.Extensions.Logging;
+﻿﻿﻿﻿using Microsoft.Extensions.Logging;
 using SMTPNET.Extensions;
 using SMTPNET.Sender.Models.Base;
 using System.Net.Mail;
@@ -15,14 +15,16 @@ namespace SMTPNET.Sender.Models
         private readonly NetworkStream _networkStream;
         private readonly string _mailServerAddress;
 
-        public SMTPEncryptedDelivery(Socket socket, string mailServerAddress, ReadOnlySpan<MailAddress> addresses, ILogger logger)
+        public static Encoding SmtpEncoding {get;set;} = Encoding.UTF8;
+
+        public SMTPEncryptedDelivery(Socket socket, string mailServerAddress, MailAddress[] addresses, ILogger logger)
         {
             _mailServerAddress = mailServerAddress;
             _logger = logger;
             _networkStream = new NetworkStream(socket);
             EndSuccess = false;
-            CheckDelivery = new EmailSent[addresses.Length];
-            for (int i = 0; i < addresses.Length; i++)
+            CheckDelivery = new EmailSent[addresses.Count()];
+            for (int i = 0; i < addresses.Count(); i++)
             {
                 CheckDelivery[i] = new() { Email = addresses[i], Received = false };
             }
@@ -145,7 +147,7 @@ namespace SMTPNET.Sender.Models
                                 case "250":
                                     goto redoData;
                                 case "354":
-                                    _logger.LogInformation($"Sent: {Encoding.ASCII.GetString(mailData)}");
+                                    _logger.LogInformation($"Sent: {SmtpEncoding.GetString(mailData)}");
                                     stream.Write(mailData);
                                     stream.Flush();
                                     EndSuccess = evaluateStart(stream, "250");
@@ -181,30 +183,14 @@ namespace SMTPNET.Sender.Models
         }
        
         
-
-
-        //internal ReadOnlySpan<char> First3(Stream stream)
-        //{
-        //    Span<byte> bytes = stackalloc byte[64];
-        //    int count = stream.Read(bytes);
-        //    if (count > 3)
-        //    {
-        //        Span<char> chars = new char[3];
-        //       // _logger.LogInformation($"On first3 Received: {Encoding.ASCII.GetString(bytes)}");
-        //        Encoding.ASCII.GetChars(bytes[..3], chars);
-        //        _logger.LogInformation($"First 3 Read: {chars}");
-        //        return chars;
-        //    }
-        //    else { stream.Flush(); return []; }
-        //}
-
+      
         internal ReadOnlySpan<char> First3(Stream stream)
         {
             Span<byte> bytes = stackalloc byte[64];
             int count = stream.Read(bytes);
             if (count > 2)
             {
-                string received = Encoding.ASCII.GetString(bytes);
+                string received = SmtpEncoding.GetString(bytes);
                 _logger.LogInformation($"First 3 Read: {received}");
                 stream.Flush();
                 return received.AsSpan(..3);
@@ -219,14 +205,21 @@ namespace SMTPNET.Sender.Models
             if (count > start.Length)
             {
                 Span<char> chars = stackalloc char[start.Length];
-                Encoding.ASCII.GetChars(bytes[..start.Length], chars);
+                SmtpEncoding.GetChars(bytes[..start.Length], chars);
                 _logger.LogInformation($"Eval Read: {chars}");
-                
-                return chars.SequenceEqual(start);
+                bool result = chars.SequenceEqual(start);
+                if (result is false)
+                {
+                    Span<char> response = stackalloc char[count];
+                    SmtpEncoding.GetChars(bytes[..(count-1)], response);
+                    _logger.LogError(response.ToString());
+                }
+
+                return result;
             }
             else 
             {
-                _logger.LogInformation("evaluateStart read 0 chars");
+                _logger.LogInformation("evaluateStart read less chars than start");
                 return false; 
             }
         }
@@ -245,7 +238,7 @@ namespace SMTPNET.Sender.Models
             }
             else
             {
-                ReadOnlySpan<string> message = Encoding.ASCII.GetString(bytes).Split("\n", StringSplitOptions.None);
+                ReadOnlySpan<string> message = SmtpEncoding.GetString(bytes).Split("\n", StringSplitOptions.None);
                 foreach (string m in message)
                 {
                     _logger.LogInformation("Read:" + m);
@@ -278,7 +271,7 @@ namespace SMTPNET.Sender.Models
 
             if (count < 1) { count = stream.Read(bytes); }
 
-            Encoding.ASCII.GetChars(bytes, chars);
+            SmtpEncoding.GetChars(bytes, chars);
             _logger.LogInformation($"Read: {chars}");
             return chars;
         }
@@ -286,7 +279,7 @@ namespace SMTPNET.Sender.Models
         private void Write(Stream stream, string message)
         {
             _logger.LogInformation($"Sent: {message}");
-            stream.Write(Encoding.ASCII.GetBytes(message));
+            stream.Write(SmtpEncoding.GetBytes(message));
         }
 
         public void Dispose()

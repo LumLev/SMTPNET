@@ -20,7 +20,7 @@
     <None Update="dkim_private.key">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="dkim_private.key">
+    <None Update="dkim_public.key">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

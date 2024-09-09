@@ -1,26 +1,26 @@
 ﻿using System.Net.Mail;
-using System.Security.Cryptography;
-using Microsoft.Extensions.Logging;
-using SMTPNET.Sender;
 using SMTPNET.Sender.Models;
-using SMTPNET.Sender.Models.Base;
-using SMTPNET.Sender.Extensions;
+using System.Text;
 
 
 
 
-MailMessage mm = new MailMessage("user@domain.tld", "ping@tools.mxtoolbox.com", "subject", "body");
+MailMessage mm = new MailMessage("ok@domain.tld", "ping@tools.mxtoolbox.com", "sub", "good");
+mm.BodyEncoding = Encoding.UTF8;
+mm.HeadersEncoding = Encoding.UTF8;
+mm.SubjectEncoding = Encoding.UTF8;
+mm.BodyTransferEncoding = System.Net.Mime.TransferEncoding.EightBit;
 //
 await SendEmail(mm);
 
 
 async Task SendEmail(MailMessage message)
 {
-    using var loggerFactory = LoggerFactory.Create(builder =>{ builder.AddConsole();});
-    SMTPRequest mailRequest = new(logger: loggerFactory.CreateLogger<Program>());
-    var emailsSent = await mailRequest.SendMessageAsync(message, true);
+    SMTPRequest mailRequest = new();
+    var emailsSent = await mailRequest.SendMessageAsync(message);
+
     foreach (var emailSent in emailsSent)
-   {
+    {
         Console.WriteLine($"{emailSent.Email} = {emailSent.Received}");
     }
 }
